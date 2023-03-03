@@ -1,4 +1,4 @@
-# Project-6: Continuous Integration on AWS Cloud
+# CI/CD on AWS Cloud using SAST tool 
 
 ### Pre-requisites :
 
