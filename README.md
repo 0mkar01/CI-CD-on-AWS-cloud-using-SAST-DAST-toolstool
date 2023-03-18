@@ -6,7 +6,7 @@
 * Sonar Cloud Account
 * AWS CLI, Git installed on Local
 
-![](images/Project-6.png)
+![](images/pipeline-architecture.png)
 
 ### Step 1 :  Setup AWS CodeCommit 
 
