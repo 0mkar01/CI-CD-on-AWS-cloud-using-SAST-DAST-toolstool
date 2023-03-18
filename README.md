@@ -5,6 +5,7 @@
 * AWS Account
 * Sonar Cloud Account
 * AWS CLI, Git installed on Local
+* Burpsuite Enterprise Server configured
 
 ![](images/pipeline-architecture.png)
 
