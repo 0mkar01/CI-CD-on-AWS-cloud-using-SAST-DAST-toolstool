@@ -21,7 +21,7 @@ Next we will create an IAM user with `CodeCommit` access from IAM console. We wi
 Name: vprofile-code-admin-repo-fullaccess
 ```
 
-![](images/iam-codecommit-admin-user.png)
+![](images/2.png)
 
 To be able connect our repo using SSH, we will follow steps given in CodeCommit.
 
