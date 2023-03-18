@@ -1,12 +1,13 @@
-# CI/CD on AWS Cloud using SAST tool 
+# End-to-end DevSecOps CI/CD pipeline on AWS Cloud using SAST & DAST tools 
 
 ### Pre-requisites :
 
 * AWS Account
 * Sonar Cloud Account
 * AWS CLI, Git installed on Local
+* Burpsuite Enterprise Server configured
 
-![](images/Project-6.png)
+![](images/pipeline-architecture.png)
 
 ### Step 1 :  Setup AWS CodeCommit 
 
@@ -21,7 +22,7 @@ Next we will create an IAM user with `CodeCommit` access from IAM console. We wi
 Name: vprofile-code-admin-repo-fullaccess
 ```
 
-![](images/iam-codecommit-admin-user.png)
+![](images/2.png)
 
 To be able connect our repo using SSH, we will follow steps given in CodeCommit.
 
@@ -35,7 +36,7 @@ Provide name: `aws-code-commit`
 cat aws-code-commit.pub
 ```
 
-![](images/sshkey-generated-local.png)
+![](images/3.png)
 
 We will also update configuration under `.ssh/config` and add our Host information. And change permissions with `chmod 600 config`
 ```sh
@@ -49,7 +50,7 @@ We can test our ssh connection to CodeCommit.
 ssh git-codecommit.ap-south-1.amazonaws.com
 ```
 
-![](images/codecommit-ssh-connection-successful.png)
+![](images/4.png)
 
 Next we clone the repository to a location that we want in our local. I will use the Github repository for `vprofile-project` in my local, and turn this repository to CodeCommit repository. When I am in Github repo directory, I will run below commands.
 
@@ -63,7 +64,7 @@ git push --tags
 ```
 - Our repo is ready on CodeCommit with all branches.
 
-![](images/codecommit-repo-ready.png)
+![](images/6.png)
 
 ### Step 2 : Setup AWS CodeArtifact
 
@@ -76,13 +77,14 @@ Domain name: visualpath
 ```
 - Again we will follow connection instructions given in CodeArtifact for  `maven-central-repo`.
 
-![](images/artifact-connection-steps.png)
+![](images/11.png)
+![](images/12.png)
 
 - We will need to create an IAM user for CodeArtifact and configure aws cli with its credentials. We will give Programmatic access to this user to be able to use aws cli and download credentials file.
 ```sh
 aws configure # provide iam user credentials
 ```
-![](images/iam-cart-admin-user.png)
+![](images/7.png)
 
 Then we run command get token as in the instructions.
 ```sh
@@ -99,7 +101,7 @@ git push origin ci-aws
 
 We need to have an account, from account avatar -> `My Account` -> `Security`. Generate token name as `vprofile-sonar-cloud`. Note the token.
 
-![](images/sonar-token.png)
+![](images/8.5.png)
 
 Next we create a project, `+` -> `Analyze Project` -> `create project manually`. Below details will be used in our Build.
 ```sh
@@ -109,7 +111,7 @@ Public
 ```
 
 Our Sonar Cloud is ready!
-![](images/sonar-cloud-ready.png)
+![](images/8.6.png)
 
 ### Step-4: Store Sonar variables in System Manager Parameter Store 
 
@@ -141,15 +143,15 @@ We need to update sonar_buildspec.yml file paramater store sections with the exa
 
 We need to add a policy to the service role created for this Build project. Find name of role from Environment, go to IAM add policy as below:
 
-![](images/ssm-parameter-access-policy.png)
+![](images/106.png)
 
 It is time to Build our project.
 
-![](images/sonarbuild-successful.png)
+![](images/5.png)
 
 We can check from SonarCloud too.
 
-![](images/sonarcloud-after-build.png)
+![](images/6.2.png)
 
 I can add Quality Gate to this Build Project, we can create a Qulaity gate from SonarCloud and add to our project.
 
@@ -170,21 +172,21 @@ StreamName: artifactbuildjob
 
 Its time to build project.
 
-![](images/build-artifact-success.png)
+![](images/8.1.png)
 
 ### Step 7 : AWS CodePipeline and Notification with SNS
 
 First we will create an SNS topic from SNS service and subscribe to topic with email.
 
-![](images/sns-topic-created.png)
+![](images/105.png)
 
 We need confirm our subscription from our email.
 
-![](images/confirm-SNS-subscription.png)
+![](images/104.png)
 
 Next we create an S3 bucket to store our deploy artifacts.
 
-![](images/s3-for-storing-artifacts.png)
+![](images/bucket.png)
 
 Lets create our CodePipeline.
 ```sh
@@ -338,7 +340,7 @@ RDSPASS: SecureString
 
 Let's run the project. It is successful!
 
-![](images/BuildandRelease-success.png)
+![](images/buildrel.png)
 
 #### Create SoftwareTesting Build Project
 
@@ -444,18 +446,7 @@ vprofile-aws-cicd-pipeline-notification
 Select all
 Notification Topic: use same topic from CI pipeline
 ```
-
-### Step 17 : Validate & Test
-
-It's time to test our pipeline.
-
-![](images/cicd-pipeline-successful.png)
-
-We can check the app from browser with Beanstalk endpoint.
-
-![](images/app-running-on-beanstalk.png)
-
-### Step 18 : Creating a EC2 instance ,install Burpsuite Enterprise Edition & Create a role and group for CI/CD users 
+### Step 17 : Creating a EC2 instance ,install Burpsuite Enterprise Edition & Create a role and group for CI/CD users 
 Before creating the API user, you need to create a new role and group to make sure that your 
 user has all of the permissions required to initiate scans from a CI/CD system. 
 1. Log in to Burp Suite Enterprise Edition as an administrator. 
@@ -468,9 +459,15 @@ details permissions, then click Save.
 7. From the list of roles, select both the built-in Scan initiators role and the new role that 
 you just created, then click Save.
 
-#### Create BuildAndRelease Build Project
+We will create an S3 bucket.
+```sh
+Name: vprofile-cicd-dast_op (give a unique name)
+Region: it should be the same region we create our pipeline
+```
 
-Then we create a new `Build Project` for DAST scanning of our application endpoint.
+#### Create DAST_scanning Project
+
+Then we create a new `DAST_scanning Project` for DAST scanning of our application endpoint.
 ```sh
 Name: DAST_scanning
 Repo: CodeCommit
@@ -498,3 +495,16 @@ Action provider: CodeBuild
 Input artifacts: SourceArtifact
 ProjectName: DAST_scanning
 ```
+### Step 18 : Validate & Test
+
+It's time to test our pipeline.
+
+![](images/cicd-pipeline-successful.png)
+
+We can check the app from browser with Beanstalk endpoint.
+
+![](images/app-running-on-beanstalk.png)
+
+The report generated by Burpsuite has been uploaded to S3 bucket.  
+![](images/report.png)
+The build fails because our app contains high severity as shown in the report !
