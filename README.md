@@ -1,4 +1,4 @@
-# CI/CD on AWS Cloud using SAST tool 
+# End-to-end devsecops CI/CD pipeline on AWS Cloud using SAST & DAST tools 
 
 ### Pre-requisites :
 
